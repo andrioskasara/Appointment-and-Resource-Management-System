@@ -8,7 +8,7 @@ from backend.app.db.models import User, Appointment
 from backend.app.db.init_db import AsyncSessionLocal
 from typing import AsyncGenerator, Optional
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/users/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -63,9 +63,8 @@ async def get_current_user_or_admin(
         result = await db.execute(query)
         appointment = result.scalars().first()
 
-        if appointment:
-            if appointment.user_id == current_user.id:
-                return current_user
+        if appointment and appointment.user_id == current_user.id:
+            return current_user
 
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,

@@ -35,11 +35,14 @@ async def get_available_resources(db: AsyncSession):
         select(models.Resource)
         .filter(models.Resource.availability == models.ResourceAvailability.available)
     )
-    available_resources = result.scalars().all()
-    return available_resources
+    return result.scalars().all()
 
 
-async def get_available_movable_resources(db: AsyncSession, start_time: str, end_time: str):
+async def get_available_movable_resources(
+        db: AsyncSession,
+        start_time: str,
+        end_time: str
+):
     start_time_dt = datetime.fromisoformat(start_time)
     end_time_dt = datetime.fromisoformat(end_time)
     subquery = (

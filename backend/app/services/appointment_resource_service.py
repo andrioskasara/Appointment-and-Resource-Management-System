@@ -67,7 +67,8 @@ async def get_movable_resources_for_appointment(db: AsyncSession, appointment_id
         .join(models.Resource)
         .filter(
             models.AppointmentResource.appointment_id == appointment_id,
-            models.Resource.type == models.ResourceType.movable
+            models.Resource.type == models.ResourceType.movable,
+            models.Resource.availability == models.ResourceAvailability.available
         )
     )
     return result.scalars().all()

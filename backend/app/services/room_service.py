@@ -10,10 +10,9 @@ from datetime import datetime
 
 async def create_room(db: AsyncSession, room: schemas.RoomCreate):
     async with db.begin():
-        capacity = int(room.capacity)
         db_room = models.Room(
             name=room.name,
-            capacity=capacity
+            capacity=int(room.capacity)
         )
 
         for resource_id in room.fixed_resources:

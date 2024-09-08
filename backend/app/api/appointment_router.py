@@ -39,6 +39,9 @@ async def update_appointment(
     current_user: User = Depends(get_current_user_or_admin)
 ):
     appointment_db = await appointment_service.get_appointment(db, appointment_id)
+    if not appointment_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found")
+
     if appointment_db.user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -46,8 +49,6 @@ async def update_appointment(
         )
 
     db_appointment = await appointment_service.update_appointment(db, appointment_id, appointment)
-    if db_appointment is None:
-        raise HTTPException(status_code=404, detail="Appointment not found")
     return db_appointment
 
 
@@ -58,6 +59,8 @@ async def delete_appointment(
     current_user: User = Depends(get_current_user_or_admin)
 ):
     appointment_db = await appointment_service.get_appointment(db, appointment_id)
+    if not appointment_db:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found")
 
     if appointment_db.user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(

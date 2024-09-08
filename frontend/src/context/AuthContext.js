@@ -19,7 +19,6 @@ export const AuthProvider = ({ children }) => {
                 const userId = decodedToken.sub;
                 const user = await getUser(userId);
                 localStorage.setItem('user', JSON.stringify(user));
-                console.log(user)
                 setAuthState({ token: access_token, user });
             } else {
                 console.error("Login failed: Token is undefined.");

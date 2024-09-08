@@ -18,18 +18,6 @@ import {getAppointmentResources} from "../../api/services/appointmentResourceSer
 import {getResource} from "../../api/services/resourceService";
 import {getUser} from "../../api/services/userService";
 
-// list the appointments the current user has created
-// maybe we can have the current appointments (the ones that are booked in the future, that are not yet passed)
-// the user can edit or delete this appointment
-// but if the users edits the appointment (I think we will need to open the BookingForm with filled values),
-// it should be handled well, in terms of availability
-// (what if some other users booked the same room meanwhile, or maybe other user booked some of the resources that were
-// available at that moment) (database)
-// if the user deletes the appointment, make sure that the room is available again (in the database),
-// also if some movable resources were booked here, we need to make sure that they are again available in the database
-// we can maybe also show the passed (past) bookings (appointments) of the current user, of course with no way to edit
-// or delete them, but is it possible to repeat them? - for this the user will need to adjust the time, and resources if
-// some are unavailable - so if this is possible maybe on click we can open the BookingForm with some filled places
 const AppointmentList = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -92,12 +80,12 @@ const AppointmentList = () => {
 
         try {
             const appointment = appointments.find(a => a.id === id);
-            // if (user.role === 'admin' || (appointment && appointment.user_id === user.id)) {
+            if (appointment && (user.role === 'admin' || appointment.user_id === user.id)) {
                 await deleteAppointment(id);
                 setAppointments(appointments.filter((appointment) => appointment.id !== id));
-            // } else {
-            //     alert('You do not have permission to delete this appointment.');
-            // }
+            } else {
+                console.log('The user does not have permission to delete this appointment.');
+            }
         } catch (error) {
             console.error('Failed to delete appointment:', error);
         }
@@ -107,11 +95,11 @@ const AppointmentList = () => {
         if (!user) return;
 
         const appointment = appointments.find(a => a.id === id);
-        // if (user.role === 'admin' || (appointment && appointment.user_id === user.id)) {
+        if (appointment && (user.role === 'admin' || appointment.user_id === user.id)) {
             navigate(`/appointments/edit/${id}`);
-        // } else {
-        //     alert('You do not have permission to edit this appointment.');
-        // }
+        } else {
+            console.log('The user does not have permission to edit this appointment.');
+        }
     };
 
     if (userLoading || loading) return <CircularProgress />;
@@ -165,7 +153,7 @@ const AppointmentList = () => {
                                                         onClick={() => handleDelete(appointment.id)}
                                                         sx={{ ml: 2 }}
                                                     >
-                                                        Delete
+                                                        Cancel
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>

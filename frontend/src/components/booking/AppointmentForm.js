@@ -18,6 +18,7 @@ import { getAvailableMovableResources } from "../../api/services/resourceService
 import RoomDetail from "../rooms/RoomDetail";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import useUser from "../../hooks/useUser";
 
 const AppointmentForm = ({ appointmentData, onSubmit, loading, error, prepopulateFields }) => {
     const [resources, setResources] = useState([]);
@@ -30,6 +31,7 @@ const AppointmentForm = ({ appointmentData, onSubmit, loading, error, prepopulat
     const [roomError, setRoomError] = useState('');
     const [resourceError, setResourceError] = useState('');
     const [timeError, setTimeError] = useState('');
+    const { user } = useUser();
 
     useEffect(() => {
         if (prepopulateFields && appointmentData) {
@@ -128,6 +130,7 @@ const AppointmentForm = ({ appointmentData, onSubmit, loading, error, prepopulat
         e.preventDefault();
         if (!validateTimes()) return;
         onSubmit({
+            user_id: user.id,
             room_id: selectedRoom,
             start_time: startTime,
             end_time: endTime,
@@ -158,6 +161,8 @@ const AppointmentForm = ({ appointmentData, onSubmit, loading, error, prepopulat
                             onChange={(e) => setStartTime(e.target.value)}
                             fullWidth
                             required
+                            InputLabelProps={{ shrink: true }}
+                            sx={{ marginBottom: 2 }}
                         />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -168,6 +173,8 @@ const AppointmentForm = ({ appointmentData, onSubmit, loading, error, prepopulat
                             onChange={(e) => setEndTime(e.target.value)}
                             fullWidth
                             required
+                            InputLabelProps={{ shrink: true }}
+                            sx={{ marginBottom: 2 }}
                         />
                     </Grid>
                 </Grid>
