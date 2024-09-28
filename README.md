@@ -1,5 +1,4 @@
 # Appointment and Resource Management System
-A project for the **Implementation of free and open source systems** course.
 
 ## Tech Stack
 - **Backend**: FastAPI
@@ -40,6 +39,3 @@ To get a local copy up and running, follow these steps:
    ```bash
    npm start
    ```
-   
-## Author
-Developed by Sara Andrioska - 201007.
