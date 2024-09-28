@@ -8,7 +8,7 @@ from backend.app.db.models import User, Appointment
 from backend.app.db.init_db import AsyncSessionLocal
 from typing import AsyncGenerator, Optional
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

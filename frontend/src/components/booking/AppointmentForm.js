@@ -139,9 +139,9 @@ const AppointmentForm = ({ appointmentData, onSubmit, loading, error, prepopulat
     };
 
     return (
-        <Box sx={{ padding: 2 }}>
-            <Typography variant="h4" gutterBottom>
-                {prepopulateFields ? 'Edit Appointment' : 'Book Appointment'}
+        <Box sx={{ m: 8 }}>
+            <Typography variant="h4" gutterBottom sx={{ marginBottom: 4 }}>
+                {prepopulateFields ? 'Edit Appointment' : 'Make an Appointment'}
             </Typography>
             <form onSubmit={handleSubmit}>
                 {loading && <CircularProgress />}

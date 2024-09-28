@@ -57,8 +57,20 @@ class Resource(Base):
     type = Column(Enum(ResourceType))
     availability = Column(Enum(ResourceAvailability))
     created_at = Column(DateTime, default=datetime.utcnow)
+    unavailable_times = relationship("ResourceUnavailable", back_populates="resource")
 
     fixed_in_rooms = relationship("Room", secondary=room_fixed_resources, back_populates="fixed_resources")
+
+
+class ResourceUnavailable(Base):
+    __tablename__ = "resource_unavailable"
+
+    id = Column(Integer, primary_key=True, index=True)
+    resource_id = Column(Integer, ForeignKey('resources.id'))
+    start_time = Column(DateTime)
+    end_time = Column(DateTime)
+
+    resource = relationship("Resource", back_populates="unavailable_times")
 
 
 class Appointment(Base):

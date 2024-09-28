@@ -20,14 +20,15 @@ import ResourceManagement from "./components/admin/ResourceManagement";
 import RoomManagement from "./components/admin/RoomManagement";
 import EditAppointmentForm from "./components/booking/EditAppointmentForm";
 import BookingForm from "./components/booking/BookingForm";
+import CalendarPage from "./pages/CalendarPage";
 
 const theme = createTheme({
     palette: {
         primary: {
-            main: '#1976d2',
+            main: '#003366',
         },
         secondary: {
-            main: '#dc004e',
+            main: '#708090',
         },
     },
 });
@@ -88,6 +89,14 @@ const App = () => (
                                 element={
                                     <PrivateRoute>
                                         <RoomList />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/calendar"
+                                element={
+                                    <PrivateRoute>
+                                        <CalendarPage />
                                     </PrivateRoute>
                                 }
                             />

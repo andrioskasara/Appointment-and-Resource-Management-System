@@ -25,17 +25,22 @@ async def create_appointment(db: AsyncSession, appointment: schemas.AppointmentC
     db.add(db_appointment)
 
     for resource_id in appointment.resource_ids:
-        resource_query = select(models.Resource).filter(
-            models.Resource.id == resource_id,
-            models.Resource.availability == models.ResourceAvailability.available
+        unavailable_query = select(models.ResourceUnavailable).filter(
+            models.ResourceUnavailable.resource_id == resource_id,
+            models.ResourceUnavailable.start_time < appointment.end_time,
+            models.ResourceUnavailable.end_time > appointment.start_time
         )
-        resource_result = await db.execute(resource_query)
-        db_resource = resource_result.scalars().first()
-        if not db_resource:
-            raise HTTPException(status_code=400, detail=f"Resource with ID {resource_id} is not available")
+        unavailable_result = await db.execute(unavailable_query)
+        if unavailable_result.scalars().first():
+            raise HTTPException(status_code=400,
+                                detail=f"Resource with ID {resource_id} is not available during the selected time slot")
 
-        db_resource.availability = models.ResourceAvailability.unavailable
-        db.add(db_resource)
+        db_unavailable = models.ResourceUnavailable(
+            resource_id=resource_id,
+            start_time=appointment.start_time,
+            end_time=appointment.end_time
+        )
+        db.add(db_unavailable)
 
         db_appointment_resource = models.AppointmentResource(
             appointment_id=db_appointment.id,
@@ -84,43 +89,40 @@ async def update_appointment(db: AsyncSession, appointment_id: int, appointment:
     db_appointment.start_time = appointment.start_time or db_appointment.start_time
     db_appointment.end_time = appointment.end_time or db_appointment.end_time
 
-    if appointment.resource_ids:
-        current_resources_query = select(models.AppointmentResource).filter(
-            models.AppointmentResource.appointment_id == db_appointment.id
+    await db.commit()
+
+    current_resources_query = select(models.AppointmentResource).filter(
+        models.AppointmentResource.appointment_id == db_appointment.id
+    )
+    current_resources_result = await db.execute(current_resources_query)
+    current_resources = {ar.resource_id for ar in current_resources_result.scalars().all()}
+
+    new_resources = set(appointment.resource_ids) if appointment.resource_ids else set()
+    resources_to_add = new_resources - current_resources
+
+    for resource_id in resources_to_add:
+        unavailable_query = select(models.ResourceUnavailable).filter(
+            models.ResourceUnavailable.resource_id == resource_id,
+            models.ResourceUnavailable.start_time < db_appointment.end_time,
+            models.ResourceUnavailable.end_time > db_appointment.start_time
         )
-        current_resources_result = await db.execute(current_resources_query)
-        current_resources = {ar.resource_id for ar in current_resources_result.scalars().all()}
+        unavailable_result = await db.execute(unavailable_query)
+        if unavailable_result.scalars().first():
+            raise HTTPException(status_code=400,
+                                detail=f"Resource with ID {resource_id} is not available during the selected time slot")
 
-        new_resources = set(appointment.resource_ids)
-        resources_to_add = new_resources - current_resources
-        resources_to_remove = current_resources - new_resources
+        db_unavailable = models.ResourceUnavailable(
+            resource_id=resource_id,
+            start_time=db_appointment.start_time,
+            end_time=db_appointment.end_time
+        )
+        db.add(db_unavailable)
 
-        for resource_id in resources_to_remove:
-            resource_query = select(models.Resource).filter(models.Resource.id == resource_id)
-            resource_result = await db.execute(resource_query)
-            db_resource = resource_result.scalars().first()
-            if db_resource:
-                db_resource.availability = models.ResourceAvailability.available
-                db.add(db_resource)
-
-        for resource_id in resources_to_add:
-            resource_query = select(models.Resource).filter(
-                models.Resource.id == resource_id,
-                models.Resource.availability == models.ResourceAvailability.available
-            )
-            resource_result = await db.execute(resource_query)
-            db_resource = resource_result.scalars().first()
-            if not db_resource:
-                raise HTTPException(status_code=400, detail=f"Resource with ID {resource_id} is not available")
-
-            db_resource.availability = models.ResourceAvailability.unavailable
-            db.add(db_resource)
-
-            db_appointment_resource = models.AppointmentResource(
-                appointment_id=db_appointment.id,
-                resource_id=resource_id
-            )
-            db.add(db_appointment_resource)
+        db_appointment_resource = models.AppointmentResource(
+            appointment_id=db_appointment.id,
+            resource_id=resource_id
+        )
+        db.add(db_appointment_resource)
 
     await db.commit()
     await db.refresh(db_appointment)
@@ -145,6 +147,14 @@ async def delete_appointment(
     appointment_resources = resources_result.scalars().all()
 
     for appointment_resource in appointment_resources:
+        await db.execute(
+            delete(models.ResourceUnavailable).where(
+                models.ResourceUnavailable.resource_id == appointment_resource.resource_id,
+                models.ResourceUnavailable.start_time == db_appointment.start_time,
+                models.ResourceUnavailable.end_time == db_appointment.end_time
+            )
+        )
+
         resource_query = select(models.Resource).filter(models.Resource.id == appointment_resource.resource_id)
         resource_result = await db.execute(resource_query)
         db_resource = resource_result.scalars().first()
@@ -153,7 +163,8 @@ async def delete_appointment(
             db.add(db_resource)
 
     await db.execute(
-        delete(models.AppointmentResource).where(models.AppointmentResource.appointment_id == appointment_id))
+        delete(models.AppointmentResource).where(models.AppointmentResource.appointment_id == appointment_id)
+    )
 
     await db.delete(db_appointment)
     await db.commit()

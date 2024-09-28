@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Container,
     Typography,
@@ -8,15 +8,19 @@ import {
     CircularProgress,
     TableContainer,
     Table,
-    TableHead, TableCell, TableRow, TableBody, Paper
+    TableHead,
+    TableCell,
+    TableRow,
+    TableBody,
+    Paper
 } from '@mui/material';
-import {useNavigate} from 'react-router-dom';
-import {deleteAppointment, getAppointments} from "../../api/services/appointmentService";
+import { useNavigate } from 'react-router-dom';
+import { deleteAppointment, getAppointments } from "../../api/services/appointmentService";
 import useUser from "../../hooks/useUser";
-import {getRoom} from "../../api/services/roomService";
-import {getAppointmentResources} from "../../api/services/appointmentResourceService";
-import {getResource} from "../../api/services/resourceService";
-import {getUser} from "../../api/services/userService";
+import { getRoom } from "../../api/services/roomService";
+import { getAppointmentResources } from "../../api/services/appointmentResourceService";
+import { getResource } from "../../api/services/resourceService";
+import { getUser } from "../../api/services/userService";
 
 const AppointmentList = () => {
     const [appointments, setAppointments] = useState([]);
@@ -102,67 +106,141 @@ const AppointmentList = () => {
         }
     };
 
+    const isPastEndTime = (endTime) => new Date(endTime) < new Date();
+    const isFutureStartTime = (startTime) => new Date(startTime) > new Date();
+    const isInProgress = (startTime, endTime) => new Date(startTime) <= new Date() && new Date(endTime) > new Date();
+
     if (userLoading || loading) return <CircularProgress />;
+
+    const futureAppointments = appointments.filter(appointment => isFutureStartTime(appointment.start_time));
+    const inProgressAppointments = appointments.filter(appointment => isInProgress(appointment.start_time, appointment.end_time));
+    const pastAppointments = appointments.filter(appointment => isPastEndTime(appointment.end_time));
 
     return (
         <Container>
             <Box sx={{ mt: 8 }}>
-                <Typography variant="h4">Appointments</Typography>
                 {error ? (
                     <Typography variant="h6" color="error">
                         Error: {error}
                     </Typography>
                 ) : (
-                    <Stack spacing={2} sx={{ mt: 4 }}>
-                        <TableContainer component={Paper}>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        {user.role === 'admin' && <TableCell>Username</TableCell>}
-                                        <TableCell>Room</TableCell>
-                                        <TableCell>Start Time</TableCell>
-                                        <TableCell>End Time</TableCell>
-                                        <TableCell>Resources</TableCell>
-                                        <TableCell>Actions</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {appointments.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={user.role === 'admin' ? 6 : 5}>No appointments found.</TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        appointments.map((appointment) => (
-                                            <TableRow key={appointment.id}>
-                                                {user.role === 'admin' && <TableCell>{appointment.username}</TableCell>}
-                                                <TableCell>{appointment.roomName}</TableCell>
-                                                <TableCell>{new Date(appointment.start_time).toLocaleString()}</TableCell>
-                                                <TableCell>{new Date(appointment.end_time).toLocaleString()}</TableCell>
-                                                <TableCell>{appointment.resources}</TableCell>
-                                                <TableCell>
-                                                    <Button
-                                                        variant="contained"
-                                                        color="primary"
-                                                        onClick={() => handleEditClick(appointment.id)}
-                                                    >
-                                                        Edit
-                                                    </Button>
-                                                    <Button
-                                                        variant="contained"
-                                                        color="secondary"
-                                                        onClick={() => handleDelete(appointment.id)}
-                                                        sx={{ ml: 2 }}
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </Stack>
+                    <>
+                        {futureAppointments.length > 0 && (
+                            <>
+                                <Typography variant="h5">Upcoming Appointments</Typography>
+                                <Stack spacing={2} sx={{ mt: 4 }}>
+                                    <TableContainer component={Paper}>
+                                        <Table>
+                                            <TableHead>
+                                                <TableRow>
+                                                    {user.role === 'admin' && <TableCell>Username</TableCell>}
+                                                    <TableCell>Room</TableCell>
+                                                    <TableCell>Start Time</TableCell>
+                                                    <TableCell>End Time</TableCell>
+                                                    <TableCell>Resources</TableCell>
+                                                    {user.role !== 'admin' && <TableCell>Actions</TableCell>}
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {futureAppointments.map((appointment) => (
+                                                    <TableRow key={appointment.id}>
+                                                        {user.role === 'admin' && <TableCell>{appointment.username}</TableCell>}
+                                                        <TableCell>{appointment.roomName}</TableCell>
+                                                        <TableCell>{new Date(appointment.start_time).toLocaleString()}</TableCell>
+                                                        <TableCell>{new Date(appointment.end_time).toLocaleString()}</TableCell>
+                                                        <TableCell>{appointment.resources}</TableCell>
+                                                        {appointment.user_id === user.id && (
+                                                            <TableCell>
+                                                                <Button
+                                                                    variant="contained"
+                                                                    color="primary"
+                                                                    onClick={() => handleEditClick(appointment.id)}
+                                                                >
+                                                                    Edit
+                                                                </Button>
+                                                                <Button
+                                                                    variant="contained"
+                                                                    color="secondary"
+                                                                    onClick={() => handleDelete(appointment.id)}
+                                                                    sx={{ ml: 2 }}
+                                                                >
+                                                                    Cancel
+                                                                </Button>
+                                                            </TableCell>
+                                                        )}
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </Stack>
+                            </>
+                        )}
+
+                        {inProgressAppointments.length > 0 && (
+                            <>
+                                <Typography variant="h5" sx={{ mt: 4 }}>In-progress Appointments</Typography>
+                                <Stack spacing={2} sx={{ mt: 4 }}>
+                                    <TableContainer component={Paper}>
+                                        <Table>
+                                            <TableHead>
+                                                <TableRow>
+                                                    {user.role === 'admin' && <TableCell>Username</TableCell>}
+                                                    <TableCell>Room</TableCell>
+                                                    <TableCell>Start Time</TableCell>
+                                                    <TableCell>End Time</TableCell>
+                                                    <TableCell>Resources</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {inProgressAppointments.map((appointment) => (
+                                                    <TableRow key={appointment.id}>
+                                                        {user.role === 'admin' && <TableCell>{appointment.username}</TableCell>}
+                                                        <TableCell>{appointment.roomName}</TableCell>
+                                                        <TableCell>{new Date(appointment.start_time).toLocaleString()}</TableCell>
+                                                        <TableCell>{new Date(appointment.end_time).toLocaleString()}</TableCell>
+                                                        <TableCell>{appointment.resources}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </Stack>
+                            </>
+                        )}
+
+                        {pastAppointments.length > 0 && (
+                            <>
+                                <Typography variant="h5" sx={{ mt: 4 }}>Past Appointments</Typography>
+                                <Stack spacing={2} sx={{ mt: 4, mb: 4 }}>
+                                    <TableContainer component={Paper}>
+                                        <Table>
+                                            <TableHead>
+                                                <TableRow>
+                                                    {user.role === 'admin' && <TableCell>Username</TableCell>}
+                                                    <TableCell>Room</TableCell>
+                                                    <TableCell>Start Time</TableCell>
+                                                    <TableCell>End Time</TableCell>
+                                                    <TableCell>Resources</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {pastAppointments.map((appointment) => (
+                                                    <TableRow key={appointment.id}>
+                                                        {user.role === 'admin' && <TableCell>{appointment.username}</TableCell>}
+                                                        <TableCell>{appointment.roomName}</TableCell>
+                                                        <TableCell>{new Date(appointment.start_time).toLocaleString()}</TableCell>
+                                                        <TableCell>{new Date(appointment.end_time).toLocaleString()}</TableCell>
+                                                        <TableCell>{appointment.resources}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </Stack>
+                            </>
+                        )}
+                    </>
                 )}
             </Box>
         </Container>

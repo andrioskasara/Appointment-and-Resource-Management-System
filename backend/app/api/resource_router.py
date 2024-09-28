@@ -59,3 +59,21 @@ async def delete_resource(resource_id: int, db: AsyncSession = Depends(get_db)):
     if deleted_resource is None:
         raise HTTPException(status_code=404, detail="Resource not found")
     return deleted_resource
+
+
+@router.put("/{resource_id}/availability", response_model=schemas.Resource)
+async def update_resource_availability(
+        resource_id: int,
+        availability: schemas.ResourceUpdate,
+        db: AsyncSession = Depends(get_db)
+):
+    # Ensure only admins or the resource owner can update availability
+    resource = await resource_service.get_resource(db, resource_id)
+    if resource is None:
+        raise HTTPException(status_code=404, detail="Resource not found")
+
+    updated_resource = await resource_service.update_resource_availability(db, resource_id, availability)
+    if updated_resource is None:
+        raise HTTPException(status_code=404, detail="Resource availability not updated")
+
+    return updated_resource

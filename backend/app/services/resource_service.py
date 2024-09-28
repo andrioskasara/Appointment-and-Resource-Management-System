@@ -97,3 +97,21 @@ async def delete_resource(db: AsyncSession, resource_id: int):
     )
     await db.commit()
     return db_resource
+
+
+async def update_resource_availability(
+    db: AsyncSession,
+    resource_id: int,
+    availability: schemas.ResourceUpdate
+):
+    async with db.transaction():
+        resource = await db.get(models.Resource, resource_id)
+        if not resource:
+            return None
+        resource.start_time = availability.start_time
+        resource.end_time = availability.end_time
+        resource.status = availability.status
+        db.add(resource)
+        await db.commit()
+        await db.refresh(resource)
+    return resource
